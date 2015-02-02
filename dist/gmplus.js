@@ -146,7 +146,8 @@ module.exports = function(global) {
    * @returns {Array} all the instances of the markers.
    */
   GMP.prototype.addMarker = function(args, options) {
-    if (Object.prototype.toString.call(args) === '[object Array]') {
+
+    if (args.length && args.length >= 1) {
       var markers = [];
       var marker;
       for (var i in args) {
@@ -158,9 +159,8 @@ module.exports = function(global) {
       return markers;
     }
 
-    if (typeof args === 'object') {
-      return _addMarker(args, options);
-    }
+    return _addMarker(args, options);
+
   };
 
 
