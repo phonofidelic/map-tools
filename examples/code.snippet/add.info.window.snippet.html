@@ -1,11 +1,9 @@
-<div class="map-panel" >
-<pre class="language-javascript">
-<code class="language-javascript">
+<div class="map-panel" ><pre class="language-javascript"><code class="language-javascript">
 	marker = map.addMarker({
 		lat: 41.3833,
 		lng: 2.1833,
 		title: 'Barcelona',
-		bubble: {
+    infoWindow: {
 			event: 'mouseover',
 			content: '<p>{city}</p>'
 		},
@@ -15,8 +13,6 @@
 	});
 	...
 	map.updateMarker(marker, {
-		bubble: {content: '<p>Click Me!</p>'}
+    infoWindow: {content: '<p>Click Me!</p>'}
 	});
-</code>
-</pre>
-</div>
+</code></pre></div>

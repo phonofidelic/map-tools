@@ -1,4 +1,4 @@
-## map-tools 0.5.0 
+## map-tools 0.6.0 
 [![Build](https://travis-ci.org/yagoferrer/map-tools.svg?branch=master)](https://travis-ci.org/yagoferrer/map-tools) 
 [![Coverage](https://coveralls.io/repos/yagoferrer/map-tools/badge.svg?branch=master)](https://coveralls.io/r/yagoferrer/map-tools)
 [![Code Climate](https://codeclimate.com/github/yagoferrer/map-tools/badges/gpa.svg?branch=master)](https://codeclimate.com/github/yagoferrer/map-tools)
@@ -6,15 +6,15 @@
 [![devDependency](https://david-dm.org/yagoferrer/map-tools/dev-status.svg)](https://david-dm.org/yagoferrer/map-tools#info=devDependencies)
 
 [map-tools](http://map-tools.io/) is a Google Maps Feature-rich Javascript wrapper that makes things like: 
-[Marker filtering](#crossfilter-support-for-markers), [asynchronous loading](#load-a-simple-map-async), working with [TopoJSON](#topojson-support) or [GeoJSON](#geojson-support), [animation](#animate-markers) and more. Much simpler with an easy-to-use API.
+[Marker filtering](#crossfilter-support-for-markers); [asynchronous loading](#load-a-simple-map-async), working with [TopoJSON](#topojson-support) or [GeoJSON](#geojson-support), [custom controls](#add-panel), [animation](#animate-markers) and more. Much simpler with an easy-to-use API.
 
 
 ## Benefits
 - Less Code: The [Google Maps API](https://developers.google.com/maps/documentation/javascript/reference) it is of considerable size. You'll be writing way **less** code with map-tools.js
-- More Fun: Add [Marker animations](#animate-markers), use [handlebars style](#info-bubble) variables.
+- More Fun: Add [Marker animations](#animate-markers), use [handlebars style](#info-window) variables.
 - Easy To Use: Intuitive APIs, easy to understand.
 - Non Intrusive: it extends the API, you can use any other native methods, properties and events anywhere.
-- [Crossfilter Support for Markers](#crossfilter-support-for-markers): Query Markers and change any options using the power of Crossfilter.
+- Query elements on the Map to update their options using [Crossfilter](#crossfilter-support-for-markers)
 - [TopoJSON Support](#topojson-support): Add Topo/GeoJSON files, set styles and find references easier. 
 - 100% tested. GPA 4.0
 - Framework agnostic
@@ -28,13 +28,11 @@ NPM:
 ```bash
 npm install map-tools --save-dev
 ```
-Direct download: [map-tools.min.js](https://github.com/yagoferrer/map-tools/blob/0.5.0/dist/map-tools.min.js)
+Direct download: [map-tools.min.js](https://github.com/yagoferrer/map-tools/blob/0.6.0/dist/map-tools.min.js)
  
 ## Check out examples:
 
-Go to: [map-tools.io](http://map-tools.io/) 
-
-Or run:
+You can either go to: [map-tools.io](http://map-tools.io/) or pull the repo and run:
 ```bash
 npm start
 ```
@@ -43,7 +41,7 @@ npm start
 There is no need to include the Google Maps `<script>` tag. map-tools.js will load the file for you.
 Setup a callback to notify you when the Map is fully loaded.
 ```javascript
-var map = new GMP({
+var map = new mapTools({
   id: 'mymap',
   lat: 41.3833,
   lng: 2.1833
@@ -55,7 +53,7 @@ var map = new GMP({
 ```
 You can also use: `el: '.mymap'`, instead of `id` to specify a query selector.
 
-By default it will load version [3.18](https://github.com/yagoferrer/map-tools/blob/0.5.0/lib/map-tools/defaults.js) of Google Maps. You can pass a specific version using the `version` option.
+By default it will load version [3.18](https://github.com/yagoferrer/map-tools/blob/0.6.0/lib/map-tools/defaults.js) of Google Maps. You can pass a specific version using the `version` option.
 
 Add a simple HTML tag
 ```html
@@ -73,7 +71,7 @@ example:
 }
 ```
 
-Add more [Map Options](https://developers.google.com/maps/documentation/javascript/reference#MapOptions). It just works. For example:
+Add more [Map Options](https://developers.google.com/maps/documentation/javascript/reference#MapOptions) from the Google Maps API and it will work just fine. For example:
 ```javascript
 {
     disableDoubleClickZoom: true,
@@ -85,44 +83,44 @@ Add more [Map Options](https://developers.google.com/maps/documentation/javascri
 
 ### Update Map 
 Update any option by calling the updateMap method like this example:
-```javavascript
-map.updateMap({zoom: 6});
+```javascript
+map.updateMap({zoom: 6, type: 'TERRAIN'});
 ```
 
-Once instantiated: you can access directly to the Google API like this: `GMP.maps.mymap.instance`
+Once instantiated: you can access directly to the Google API like this: `map.instance`
 
 ## Markers
 
 #### Add One Marker
 ```javascript
 map.addMarker({
-     lat: 41.3833,
-     lng: 2.1833,
-     title: 'Barcelona'
-     });
+  lat: 41.3833,
+  lng: 2.1833,
+  title: 'Barcelona'
+});
 ```
 
 #### Add Multiple Markers
 
 ```javascript
-map.addMarker([
-    {
+map.addMarker([{
       lat: 41.3833,
       lng: 2.1833,
       title: 'Barcelona'
-    },
-    {
+    },{
       lat: 42.5000,
       lng: 1.5167,
       title: 'Andorra'
     }
-  ], {icon: 'images/city.png'});
+  ], {icon: 'images/city.png'}); // the 2nd parameter allows you to add shared options.
 ```
-Add any other [Marker Options](https://developers.google.com/maps/documentation/javascript/reference#MarkerOptions)
-
 The 2nd parameter of `addMarker`, allows you to add options that apply to all the Markers within the Array.
 
-Once the Markers are created, you can access directly like this: `GMP.maps.mymap.markers.all`
+Add any other [Marker Options](https://developers.google.com/maps/documentation/javascript/reference#MarkerOptions)
+
+
+
+Once the Markers are created, you can access to all Markers directly like this: `map.markers.all`
 
 #### Update Marker
 Allows you to update one or multiple marker options. The 1st parameter can be: a result of Crossfilter, a Marker reference or the uid like this: `{uid: '<uid>'}`
@@ -166,14 +164,14 @@ map.updateGroup('myGroup', {visible: true});
 // Updates all the Markers to be visible.
 ```
 
-#### Info Bubble
+#### Info Window
 
-Adds an info bubble with HTML content.
+Adds an info window with HTML content.
 ```javascript
 map.addMarker({
   lat: 41.3833,
   lng: 2.1833,
-  bubble: {
+  infoWindow: {
     event: 'mouseover',
     content: '<p>{city} City</p>'
   },
@@ -184,7 +182,7 @@ map.addMarker({
 ```
 Use curly brackets to display variables from `data` 
 
-Add more [infoWindow options](https://developers.google.com/maps/documentation/javascript/reference#InfoWindowOptions) inside `bubble`.
+Add more [infoWindow options](https://developers.google.com/maps/documentation/javascript/reference#InfoWindowOptions) inside `infoWindow`.
 The default **event** is `click` but you can change it with the `event` property.
 
 
@@ -193,29 +191,16 @@ The default **event** is `click` but you can change it with the `event` property
 - Add what data properties you want to index into the `filters` option. That will generate default Crossfilter [dimensions](https://github.com/square/crossfilter/wiki/API-Reference#dimension).
  
 ```javascript
-  var map = new GMP({
-    id: 'mymap',
-    lat: 40.5.0,
-    lng: -3.710436
-  }, function (err, instance) {
-    if (!err) {
-      addMarker();
-    }
-  });
-
-  function addMarker() {
+  function addMarkers() {
     map.addMarker([
       {
-        lat: 41.3833,
-        lng: 2.1833,
+        lat: 41.3833, lng: 2.1833,
         data: {
           name: 'Barcelona',
           population: 1621000
         }
-      },
-      {
-        lat: 40.5.0,
-        lng: -3.710436,
+      },{
+        lat: 40.6.0, lng: -3.710436,
         data: {
           name: 'Madrid',
           population: 3234000
@@ -225,10 +210,18 @@ The default **event** is `click` but you can change it with the `event` property
       filters: ['population']
     });
   }
+  
+  var map = new mapTools({id: 'mymap', lat: 40.6.0, lng: -3.710436}, 
+  function (err, instance) {
+    if (!err) {
+      addMarkers();
+    }
+  });
 ```
 Now you can use the power of Crossfilter to update Markers. In this example it finds the city with larger population, Madrid, and makes the marker to bounce.
 ```javascript
-map.updateMarker(map.markers.filter.population.top(1), {move: 'bounce'});
+var marker = map.filterMarker('population', {limit: 1});
+map.updateMarker(marker, {move: 'bounce'});
 ```
 
 You can also pass custom Crossfilter dimensions to the `filters` option:
@@ -273,18 +266,26 @@ You can update the `style` of the existing Feature on a map.
 ```javascript
  var colorado = map.filterFeature({NAME:'Colorado'}, {limit: 1});
  var nevada = map.filterFeature({NAME:'Colorado'}, {limit: 1});
- map.updateFeature([colorado,nevada], {style: {fillOpacity: 0.4, fillColor:'black', strokeColor: 'black'}});
+ var style = {fillOpacity: 0.4, fillColor:'black', strokeColor: 'black'};
+ map.updateFeature([colorado,nevada], {style: style});
 ```
 
 You can also update the `style` of a group of features by a mapping function.
 
 ```javascript
-	map.updateFeature(..., { style: function(){
-			var value = (this.data.VALUE/this.data.MAX_VALUE);
-			var l = ((value) * 50)+50;
-			return { fillColor: 'hsl(210,100%,'+l+'%)'}
-		}
-	});
+function color() {
+var value = (this.data.CENSUSAREA/570640.95);
+var alpha = 5;
+var h = 210, s = 100,
+l = (Math.pow((1 - value), alpha) * 50)+50;
+return {
+	fillColor: 'hsl('+h+','+s+'%,'+l+'%)',
+	fillOpacity:0.7
+	}
+};
+
+var all = map.filterFeature('CENSUSAREA');
+map.updateFeature(all, {style: color});
 ```
 
 ## Crossfilter support for Features
@@ -292,12 +293,27 @@ You can also update the `style` of a group of features by a mapping function.
 You can use a Crossfilter result to update features. In this example it finds the State named: 'Texas' and updates the background color.
 
 ```javascript
-map.updateFeature(map.json.filter.NAME.filter('Colorado').top(1), {style: {fillColor:'black'}})
+var feature = map.filterFeature({NAME:'Colorado'}, {limit: 1});
+map.updateFeature(feature, {style: {fillColor:'black'}})
 ```
 
 Add more [Style Options](https://developers.google.com/maps/documentation/javascript/reference#Data.StyleOptions)
 
-Once the Features are created, you can access directly like this: `GMP.maps.mymap.json.groups.states` and `GMP.maps.mymap.json.groups.counties`
+Once the Features are created, you can access directly like this: `mapTools.maps.mymap.json.groups.states` and `mapTools.maps.mymap.json.groups.counties`
+
+## Add Panel
+Adds a custom native Control to Google Maps
+
+```javascript
+ map.addPanel({
+    templateURL: 'templates/custom.panel.html',
+    position:'top center',
+    events: {
+      '.menu li click' : function (e) {
+        e.target.classList.toggle('active');
+      }}
+  });
+``` 
 
 
 ## How can you contribute?

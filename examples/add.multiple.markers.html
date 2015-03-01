@@ -10,10 +10,11 @@
 </head>
 <body>
 <script>
-  var map = new GMP({
+  var map = new mapTools({
     id: 'mymap',
     lat: 41.3833,
-    lng: 2.1833
+    lng: 2.1833,
+    zoom: 6
   }, function (err, instance) {
     if (!err) {
       addMarkers();
@@ -22,8 +23,9 @@
 	    map.addPanel({
 		    templateURL: 'code.snippet/add.multiple.markers.snippet.html',
 		    position:'right center'
-	    });
-	    Prism.highlightAll();
+      }, function() {
+        Prism.highlightAll();
+      });
 
     }
   });

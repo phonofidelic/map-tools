@@ -11,7 +11,7 @@
 
 <body>
 <script>
-  var map = new GMP({
+  var map = new mapTools({
     id: 'mymap',
     lat: 41.3833,
     lng: 2.1833,
@@ -23,8 +23,9 @@
 	  map.addPanel({
 		  templateURL: 'code.snippet/simple.map.snippet.html',
 		  position:'right center'
-	  });
-	  Prism.highlightAll();
+    }, function() {
+      Prism.highlightAll();
+    });
 
   });
 </script>

@@ -16,7 +16,7 @@
 
 	var positions = [{lat: 41.3833, lng:2.1833}, {lat: 42.263177, lng: 3.178188}];
 
-	var map = new GMP({
+	var map = new mapTools({
 		id: 'mymap',
 		lat: 41.3833,
 		lng: 2.1833
@@ -26,14 +26,14 @@
 
 			map.addPanel({
 				template: '<div class="actions">' +
-				'<div class="update-crossfilter">Update Marker by using Crossfilter</div>' +
+				'<div class="update-crossfilter">Update Marker by using markerFilter()</div>' +
 				'<div class="update-reference">Update Marker by using it\'s own reference</div>' +
 				'<div class="update-reference-location">Update Marker to another location</div>' +
 				'</div>',
 				position: 'right center',
 				events: {
 					'.update-crossfilter click': function (e) {
-						var marker = map.markers.filter.cityName.filterExact('barcelona').top(1);
+						var marker = map.filterMarker({cityName: 'barcelona'}, {limit: 1});
 						map.updateMarker(marker, {move: 'drop'});
 						e.preventDefault();
 					},
@@ -57,8 +57,9 @@
 			map.addPanel({
 				templateURL: 'code.snippet/update.marker.snippet.html',
 				position:'right center'
-			});
-			Prism.highlightAll();
+      }, function() {
+        Prism.highlightAll();
+      });
 		}
 	});
 
