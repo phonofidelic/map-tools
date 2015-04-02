@@ -21,6 +21,8 @@
 		  template: '<div class="actions">' +
 		  '<div class="update-terrain">Update to type TERRAIN and disable controls</div>' +
 		  '<div class="update-roadmap">Update to type ROADMAP and enable controls</div>' +
+      '<div class="center-map">Center Map</div>' +
+      '<div class="zoom-map">Zoom Map</div>' +
 		  '</div>',
 		  position: 'right center',
 		  events: {
@@ -35,7 +37,6 @@
 							  panControl: false
 						  });
 			  },
-
 			  '.update-roadmap click': function (e) {
 				  e.preventDefault();
 				  map.updateMap({
@@ -45,7 +46,15 @@
 					  streetViewControl: true,
 					  panControl: true
 				  });
-			  }
+			  },
+        '.center-map click': function(e) {
+          e.preventDefault();
+          map.center(40.416854, -3.703419);
+        },
+        '.zoom-map click': function(e) {
+          e.preventDefault();
+          map.zoom(12);
+        }
 		  }
 	  });
 
