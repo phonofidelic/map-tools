@@ -1,4 +1,4 @@
-## map-tools 0.7.0 
+## map-tools 0.8.0 
 [![Build](https://travis-ci.org/yagoferrer/map-tools.svg?branch=master)](https://travis-ci.org/yagoferrer/map-tools) 
 [![Coverage](https://coveralls.io/repos/yagoferrer/map-tools/badge.svg?branch=master)](https://coveralls.io/r/yagoferrer/map-tools)
 [![Code Climate](https://codeclimate.com/github/yagoferrer/map-tools/badges/gpa.svg?branch=master)](https://codeclimate.com/github/yagoferrer/map-tools)
@@ -13,10 +13,10 @@
 - Less Code: The [Google Maps API](https://developers.google.com/maps/documentation/javascript/reference) it is of considerable size. You'll be writing way **less** code with map-tools.js
 - More Fun: Add [Marker animations](#animate-markers), use [handlebars style](#info-window) variables.
 - Easy To Use: Intuitive APIs, easy to understand.
-- Non Intrusive: it extends the API, you can use any other native methods, properties and events anywhere.
+- Non Intrusive: it extends the API; you can use any other native methods, properties and events anywhere.
 - Query elements on the Map to update their options using [Crossfilter](#crossfilter-support-for-markers)
 - [TopoJSON Support](#topojson-support): Add Topo/GeoJSON files, set styles and find references easier. 
-- 100% tested. GPA 4.0
+- Well tested. Good GPA rating. 
 - Framework agnostic
 
 ## Get Started
@@ -28,21 +28,18 @@ NPM:
 ```bash
 npm install map-tools --save-dev
 ```
-Direct download: [map-tools.min.js](https://github.com/yagoferrer/map-tools/blob/0.7.0/dist/map-tools.min.js)
+Direct download: [map-tools.min.js](https://github.com/yagoferrer/map-tools/blob/0.8.0/dist/map-tools.min.js)
 
-## Meteor Users
-I'm working on a lab project for map-tools.js + Meteor integration. Please go to: [meteor-map-tools](https://github.com/yagoferrer/meteor-map-tools) for more information.
- 
-## Check out examples:
+## Examples:
 
 You can either go to: [map-tools.io](http://map-tools.io/) or pull the repo and run:
 ```bash
 npm start
 ```
 
-## Load a simple Map async
-There is no need to include the Google Maps `<script>` tag. map-tools.js will load the file for you.
-Setup a callback to notify you when the Map is fully loaded.
+### Start by loading the Map Async
+There is no need to include the Google Maps `<script>` tag. **map-tools** will load the file for you asynchronously.
+Setting a callback function to notify you when the Map is fully loaded it will help you to do things that depend on the Map.
 ```javascript
 var map = new mapTools({
   id: 'mymap',
@@ -56,24 +53,25 @@ var map = new mapTools({
 ```
 You can also use: `el: '.mymap'`, instead of `id` to specify a query selector.
 
-By default it will load version [3.18](https://github.com/yagoferrer/map-tools/blob/0.7.0/lib/map-tools/defaults.js) of Google Maps. You can pass a specific version using the `version` option.
+By default it will load version [3.18](https://github.com/yagoferrer/map-tools/blob/0.8.0/lib/map-tools/defaults.js) of Google Maps. You can pass a specific version using the `version` option.
 
 Add a simple HTML tag
 ```html
 <div id="mymap"></div>
 ```
-### Map Types
-Default map types are : ROADMAP, SATELLITE, HYBRID and TERRAIN
-example:
+
+### Map Native Instance
+Once instantiated: you can access directly to the Google API like this: `map.instance` or `mapTools.mymap.instance`
+
+## Map Methods
+
+#### Update Map 
+Update any option by calling the updateMap method like this example:
 ```javascript
-{
- el: '.mymap',
- lat: 41.3833,
- lng: 2.1833
- type: 'TERRAIN'
-}
+map.updateMap({zoom: 6, type: 'TERRAIN'});
 ```
 
+Default map types are : ROADMAP, SATELLITE, HYBRID and TERRAIN.
 Add more [Map Options](https://developers.google.com/maps/documentation/javascript/reference#MapOptions) from the Google Maps API and it will work just fine. For example:
 ```javascript
 {
@@ -84,26 +82,33 @@ Add more [Map Options](https://developers.google.com/maps/documentation/javascri
 }
 ```
 
-### Update Map 
-Update any option by calling the updateMap method like this example:
+#### Center Map
+Call this method to center the Map.
 ```javascript
-map.updateMap({zoom: 6, type: 'TERRAIN'});
+map.center();
 ```
-
-### Center Map
-Call this method to center the Map. If you don't pass any coordinates it will use the initial values set to the Map.
+If you pass latitude and longitude coordinates it will center the Map using the coordinates provided
 ```javascript
 map.center(41.3833, 2.1833);
 ```
 
-### Zoom Map
-Use this method to Zoom into a specific level.
+#### Zoom Map
+Zoom map into a specific Zoom level.
 ```javascript
 map.zoom(12);
 ```
 
+#### Get the current Zoom Level.
+```javascript
+map.zoom();
+// Result: 8
+```
 
-Once instantiated: you can access directly to the Google API like this: `map.instance`
+#### Get Current Map Center Position
+```javascript
+map.locate()
+// Result: {lat: 41.3833, lng: 2.1833}
+```
 
 ## Markers
 
@@ -112,7 +117,12 @@ Once instantiated: you can access directly to the Google API like this: `map.ins
 map.addMarker({
   lat: 41.3833,
   lng: 2.1833,
-  title: 'Barcelona'
+  title: 'Barcelona',
+  on: {
+    click: function() {
+      alert('Barcelona!');
+    }
+  }  
 });
 ```
 
@@ -188,7 +198,8 @@ map.addMarker({
   lat: 41.3833,
   lng: 2.1833,
   infoWindow: {
-    event: 'mouseover',
+    openOn: 'mouseover',
+    closeOn: 'click',
     content: '<p>{city} City</p>'
   },
   data: {
@@ -216,7 +227,7 @@ The default **event** is `click` but you can change it with the `event` property
           population: 1621000
         }
       },{
-        lat: 40.7.0, lng: -3.710436,
+        lat: 41.3833, lng: -3.710436,
         data: {
           name: 'Madrid',
           population: 3234000
@@ -227,7 +238,7 @@ The default **event** is `click` but you can change it with the `event` property
     });
   }
   
-  var map = new mapTools({id: 'mymap', lat: 40.7.0, lng: -3.710436}, 
+  var map = new mapTools({id: 'mymap', lat: 41.3833, lng: -3.710436}, 
   function (err, instance) {
     if (!err) {
       addMarkers();
@@ -331,6 +342,8 @@ Adds a custom native Control to Google Maps
   });
 ``` 
 
+## Meteor Users
+You can use map-tools as it is but I'm working on a lab project for map-tools.js + Meteor integration. Please go to: [meteor-map-tools](https://github.com/yagoferrer/meteor-map-tools) for more information.
 
 ## How can you contribute?
 Get involved! Check out the list of [feature requests](https://github.com/yagoferrer/map-tools/issues). All PRs and ideas are welcome.
