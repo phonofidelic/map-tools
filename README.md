@@ -1,4 +1,4 @@
-## map-tools 0.8.0 
+## map-tools 0.9.0 
 [![Build](https://travis-ci.org/yagoferrer/map-tools.svg?branch=master)](https://travis-ci.org/yagoferrer/map-tools) 
 [![Coverage](https://coveralls.io/repos/yagoferrer/map-tools/badge.svg?branch=master)](https://coveralls.io/r/yagoferrer/map-tools)
 [![Code Climate](https://codeclimate.com/github/yagoferrer/map-tools/badges/gpa.svg?branch=master)](https://codeclimate.com/github/yagoferrer/map-tools)
@@ -6,7 +6,7 @@
 [![devDependency](https://david-dm.org/yagoferrer/map-tools/dev-status.svg)](https://david-dm.org/yagoferrer/map-tools#info=devDependencies)
 
 [map-tools](http://map-tools.io/) is a Google Maps Feature-rich Javascript wrapper that makes things like: 
-[Marker filtering](#crossfilter-support-for-markers); [asynchronous loading](#load-a-simple-map-async), working with [TopoJSON](#topojson-support) or [GeoJSON](#geojson-support), [custom controls](#add-panel), [animation](#animate-markers) and more. Much simpler with an easy-to-use API.
+[Marker filtering](#crossfilter-support-for-markers); [asynchronous loading](#start-by-loading-the-map-async), working with [TopoJSON](#topojson-support) or [GeoJSON](#geojson-support), [custom controls](#add-panel), [animation](#animate-markers) and more. Much simpler with an easy-to-use API.
 
 
 ## Benefits
@@ -17,7 +17,7 @@
 - Query elements on the Map to update their options using [Crossfilter](#crossfilter-support-for-markers)
 - [TopoJSON Support](#topojson-support): Add Topo/GeoJSON files, set styles and find references easier. 
 - Well tested. Good GPA rating. 
-- Framework agnostic
+- Framework agnostic.
 
 ## Get Started
 Bower (Recommended):
@@ -28,7 +28,7 @@ NPM:
 ```bash
 npm install map-tools --save-dev
 ```
-Direct download: [map-tools.min.js](https://github.com/yagoferrer/map-tools/blob/0.8.0/dist/map-tools.min.js)
+Direct download: [map-tools.min.js](https://github.com/yagoferrer/map-tools/blob/0.9.0/dist/map-tools.min.js)
 
 ## Examples:
 
@@ -45,7 +45,7 @@ var map = new mapTools({
   id: 'mymap',
   lat: 41.3833,
   lng: 2.1833
-}, function (err, instance) {
+}, function (err, map) {
   if (!err) {
     console.log('Hey! the Map was fully loaded! Add some Markers :)');
   }
@@ -53,7 +53,7 @@ var map = new mapTools({
 ```
 You can also use: `el: '.mymap'`, instead of `id` to specify a query selector.
 
-By default it will load version [3.18](https://github.com/yagoferrer/map-tools/blob/0.8.0/lib/map-tools/defaults.js) of Google Maps. You can pass a specific version using the `version` option.
+By default it will load version [3.18](https://github.com/yagoferrer/map-tools/blob/0.9.0/lib/map-tools/defaults.js) of Google Maps. You can pass a specific version using the `version` option.
 
 Add a simple HTML tag
 ```html
@@ -61,14 +61,14 @@ Add a simple HTML tag
 ```
 
 ### Map Native Instance
-Once instantiated: you can access directly to the Google API like this: `map.instance` or `mapTools.mymap.instance`
+There are two ways to access directly to the Google Maps API: `map.instance` or `mapTools[YourMapId].instance`
 
 ## Map Methods
 
 #### Update Map 
 Update any option by calling the updateMap method like this example:
 ```javascript
-map.updateMap({zoom: 6, type: 'TERRAIN'});
+map.updateMap({type: 'TERRAIN'});
 ```
 
 Default map types are : ROADMAP, SATELLITE, HYBRID and TERRAIN.
@@ -77,8 +77,7 @@ Add more [Map Options](https://developers.google.com/maps/documentation/javascri
 {
     disableDoubleClickZoom: true,
     mapTypeControl: false,
-    streetViewControl: false,
-    zoom: 15
+    streetViewControl: false
 }
 ```
 
@@ -123,6 +122,17 @@ map.addMarker({
       alert('Barcelona!');
     }
   }  
+});
+```
+Once you add a Marker, it will generate a unique identifier to save a reference of the Marker under `map.markers.all[uid]`. You can also set your **custom uid** like this:
+
+```javascript
+map.addMarker({
+  lat: 41.3833,
+  lng: 2.1833,
+  data: {
+   uid: "257c726053"
+  }
 });
 ```
 
@@ -239,7 +249,7 @@ The default **event** is `click` but you can change it with the `event` property
   }
   
   var map = new mapTools({id: 'mymap', lat: 41.3833, lng: -3.710436}, 
-  function (err, instance) {
+  function (err, map) {
     if (!err) {
       addMarkers();
     }
@@ -347,3 +357,7 @@ You can use map-tools as it is but I'm working on a lab project for map-tools.js
 
 ## How can you contribute?
 Get involved! Check out the list of [feature requests](https://github.com/yagoferrer/map-tools/issues). All PRs and ideas are welcome.
+
+##Sponsors
+Thank you so much to all our sponsors for providing free licenses:
+[WebStorm](https://www.jetbrains.com/webstorm/), [Code Climate](https://codeclimate.com/), [Travis](https://travis-ci.com/) and [Coveralls] (https://coveralls.io/)
