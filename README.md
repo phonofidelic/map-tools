@@ -1,4 +1,4 @@
-## map-tools 0.9.0 
+## map-tools 1.0.0 
 [![Build](https://travis-ci.org/yagoferrer/map-tools.svg?branch=master)](https://travis-ci.org/yagoferrer/map-tools) 
 [![Coverage](https://coveralls.io/repos/yagoferrer/map-tools/badge.svg?branch=master)](https://coveralls.io/r/yagoferrer/map-tools)
 [![Code Climate](https://codeclimate.com/github/yagoferrer/map-tools/badges/gpa.svg?branch=master)](https://codeclimate.com/github/yagoferrer/map-tools)
@@ -18,6 +18,7 @@
 - [TopoJSON Support](#topojson-support): Add Topo/GeoJSON files, set styles and find references easier. 
 - Well tested. Good GPA rating. 
 - Framework agnostic.
+- My ultimate goals are performance and Google API simplification.
 
 ## Get Started
 Bower (Recommended):
@@ -28,7 +29,7 @@ NPM:
 ```bash
 npm install map-tools --save-dev
 ```
-Direct download: [map-tools.min.js](https://github.com/yagoferrer/map-tools/blob/0.9.0/dist/map-tools.min.js)
+Direct download: [map-tools.min.js](https://github.com/yagoferrer/map-tools/blob/1.0.0/dist/map-tools.min.js)
 
 ## Examples:
 
@@ -53,7 +54,7 @@ var map = new mapTools({
 ```
 You can also use: `el: '.mymap'`, instead of `id` to specify a query selector.
 
-By default it will load version [3.18](https://github.com/yagoferrer/map-tools/blob/0.9.0/lib/map-tools/defaults.js) of Google Maps. You can pass a specific version using the `version` option.
+By default it will load version [3.18](https://github.com/yagoferrer/map-tools/blob/1.0.0/lib/map-tools/defaults.js) of Google Maps. You can pass a specific version using the `version` option.
 
 Add a simple HTML tag
 ```html
@@ -63,6 +64,20 @@ Add a simple HTML tag
 ### Map Native Instance
 There are two ways to access directly to the Google Maps API: `map.instance` or `mapTools[YourMapId].instance`
 
+### Map Events
+
+You can listen for Map events when creating a new Map.
+
+```javascript
+var map = new mapTools({
+  on: {
+      zoom_changed: function() {
+        console.log('the zoom level has changed!', map.zoom())
+      }
+  }  
+...
+
+```
 ## Map Methods
 
 #### Update Map 
@@ -124,8 +139,9 @@ map.addMarker({
   }  
 });
 ```
-Once you add a Marker, it will generate a unique identifier to save a reference of the Marker under `map.markers.all[uid]`. You can also set your **custom uid** like this:
-
+Once you add a Marker, it will generate a unique identifier to save a reference of the Marker under `map.markers.all[uid]`. 
+There are a couple of ways to setup a custom uid.
+**data.uid**
 ```javascript
 map.addMarker({
   lat: 41.3833,
@@ -135,6 +151,25 @@ map.addMarker({
   }
 });
 ```
+Or custom a property. This is handy if the only data property is a unique identifier.
+
+```javascript
+var map = new mapTools({
+  id: 'mymap',
+  lat: 41.3833,
+  lng: 2.1833,
+  uid: 'custom_id',
+}, function (err, map) {
+  if (!err) {
+    map.addMarker({
+      lat: 41.3833,
+      lng: 2.1833,
+      uid: "257c726053"
+    });
+  }
+});
+```
+
 
 #### Add Multiple Markers
 
@@ -169,6 +204,19 @@ map.updateMarker(<marker>, {visible: false})
 
 You can also use `lat` and `lng` to change the position of the Marker and many other options.
 
+#### Remove Marker
+Allows you to delete one or multiple Markers.
+
+```javascript
+map.removeMarker([markerInstance, markerInstance]);
+```
+
+#### Remove All Markers
+Call the method with no parameters and that will delete all the Markers in the Map.
+```javascript
+map.removeMarker()
+```
+
 
 #### Animate Markers
 Make your marker bounce `move: 'bounce'` or drop `move: 'drop'`
@@ -202,14 +250,15 @@ map.updateGroup('myGroup', {visible: true});
 
 #### Info Window
 
-Adds an info window with HTML content.
+You can add an infoWindow bubble with dynamic content and setup `open` and `close` events with a duration timer. 
+
 ```javascript
 map.addMarker({
   lat: 41.3833,
   lng: 2.1833,
   infoWindow: {
-    openOn: 'mouseover',
-    closeOn: 'click',
+    open: {on: 'mouseover'},
+    close: {on: 'mouseout', duration: 3000},
     content: '<p>{city} City</p>'
   },
   data: {
@@ -351,6 +400,17 @@ Adds a custom native Control to Google Maps
       }}
   });
 ``` 
+
+## Add Angular.js template into a Map Panel.
+You can inject an Angular template and benefit from two way binding. You'll need to pre-compile the template like this:
+
+```javascript
+var template = '<div>{{scopeVar}}</div>';
+map.addPanel({
+  position: 'top right',
+  template: $compile(template)($scope)[0]	
+})
+```
 
 ## Meteor Users
 You can use map-tools as it is but I'm working on a lab project for map-tools.js + Meteor integration. Please go to: [meteor-map-tools](https://github.com/yagoferrer/meteor-map-tools) for more information.

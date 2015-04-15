@@ -1,4 +1,4 @@
-/* map-tools.js 0.9.0 MIT License. 2015 Yago Ferrer <yago.ferrer@gmail.com> */
+/* map-tools.js 1.0.0 MIT License. 2015 Yago Ferrer <yago.ferrer@gmail.com> */
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 /* global: window */
 /*jslint node: true */
@@ -162,11 +162,25 @@ module.exports = function (global, that) {
     that.id = args.id;
     that.options = args;
     that.instance = new global.google.maps.Map(getElement(args), mapOptions);
+
+    // Add Events
+    if (args.on) {
+      var i;
+      for (i in args.on) {
+        if (args.on.hasOwnProperty(i)) {
+          global.google.maps.event.addListener(that.instance, i, args.on[i]);
+        }
+      }
+    }
+
+
     that.infoWindow = false;
     that.templates = {
       infoWindow: {},
       panel: {}
     };
+
+    that.uid = args.uid;
 
     global.mapTools.maps[that.id].instance = that.instance;
 
@@ -284,7 +298,11 @@ module.exports = function (global, that) {
 
     marker.data = marker.data || {};
 
-    if (marker.data && !marker.data.uid) {
+    if (that.uid && marker[that.uid]) {
+      marker.data.uid = marker[that.uid];
+    }
+
+    if (!marker.data.uid) {
       marker.data.uid = utils.createUid();
     }
 
@@ -419,7 +437,10 @@ module.exports = function(global, that) {
 		} else {
       if (typeof options.template === 'string') {
         panel = HTMLParser(options.template);
+      } else {
+        panel = options.template;
       }
+
       return onSuccess();
     }
 
@@ -497,9 +518,10 @@ module.exports = {
   version: '3.18', // Released: May 15, 2014
   url: '//maps.googleapis.com/maps/api/js',
   zoom: 8,
-  customMapOptions: ['id', 'lat', 'lng', 'type'],
+  customMapOptions: ['id', 'lat', 'lng', 'type', 'uid'],
   customMarkerOptions: ['lat', 'lng', 'move', 'infoWindow', 'on'],
-  panelPosition: 'TOP_LEFT'
+  panelPosition: 'TOP_LEFT',
+  customInfoWindowOptions: ['open', 'close']
 };
 
 },{}],9:[function(require,module,exports){
@@ -713,9 +735,13 @@ module.exports = function (global) {
 },{"map-tools/addFeature":2,"map-tools/addMap":4,"map-tools/addMarker":5,"map-tools/addPanel":6,"map-tools/center":7,"map-tools/filter":9,"map-tools/groups":12,"map-tools/removeMarker":15,"map-tools/updateFeature":17,"map-tools/updateMap":18,"map-tools/updateMarker":19}],14:[function(require,module,exports){
 /*jslint node: true */
 "use strict";
+
+var utils = require('map-tools/utils');
+var config = require('map-tools/config');
+
 module.exports = function (global, that) {
 
-
+  var timer = false;
 
   function infoWindow(marker, options)
   {
@@ -724,6 +750,8 @@ module.exports = function (global, that) {
         options.content = options.content.replace(/\{(\w+)\}/g, function (m, variable) {
           return marker.data[variable] || '';
         });
+
+        marker.infoWindow.content = options.content;
       }
 
        marker.infoWindow.instance = new global.google.maps.InfoWindow(options);
@@ -733,41 +761,55 @@ module.exports = function (global, that) {
   }
 
   function open(marker, options, map) {
-    if (that.infoWindow && isOpen(that.infoWindow)) {
-      that.infoWindow.close();
-    }
+    close();
     infoWindow(marker, options);
-    marker.infoWindow.instance.open(map, marker)
+    marker.infoWindow.instance.open(map, marker);
   }
   function isOpen(infoWindow){
     var map = infoWindow.getMap();
     return (map !== null && typeof map !== "undefined");
   }
 
+  function close() {
+
+    clearTimeout(timer);
+    if (that.infoWindow && isOpen(that.infoWindow)) {
+      that.infoWindow.close();
+    }
+  }
+
   function addEvents(marker, options, map) {
-    var openOn = options.openOn || 'click';
-    var closeOn = options.closeOn || 'click';
+
+    var args = utils.prepareOptions(options, config.customInfoWindowOptions);
+    var openOn = (args.custom && args.custom.open && args.custom.open.on) ?  args.custom.open.on : 'click';
+    var closeOn = (args.custom && args.custom.close && args.custom.close.on) ? args.custom.close.on : 'click';
+
 
     // Toggle Effect when using the same method to Open and Close.
     if (openOn === closeOn) {
       global.google.maps.event.addListener(marker, openOn, function () {
-
         if (!marker.infoWindow.instance || !isOpen(marker.infoWindow.instance)) {
-
-          open(marker, options, map);
-
+          open(marker, args.defaults, map);
         } else {
-          marker.infoWindow.instance.close();
+          close();
         }
       });
 
     } else {
+
       global.google.maps.event.addListener(marker, openOn, function () {
-        open(marker, options, map);
+        open(marker, args.defaults, map);
       });
 
+
       global.google.maps.event.addListener(marker, closeOn, function () {
-        marker.infoWindow.instance.close();
+        if (args.custom.close.duration) {
+          timer = setTimeout(function(){
+            close();
+          }, args.custom.close.duration);
+        } else {
+          close();
+        }
       });
     }
   }
@@ -778,13 +820,27 @@ module.exports = function (global, that) {
 };
 
 
-},{}],15:[function(require,module,exports){
+},{"map-tools/config":8,"map-tools/utils":20}],15:[function(require,module,exports){
 "use strict";
 module.exports = function(global, that) {
 
   var findMarker = require('map-tools/findMarker')(global, that);
 
+  function removeBulk(args) {
+    var marker, x;
+    for (x in args) {
+      if (args.hasOwnProperty(x)) {
+        marker = args[x];
+        remove(findMarker(marker));
+      }
+    }
+  }
+
   function removeMarker(args) {
+
+    if (typeof args === 'undefined') {
+      removeBulk(that.markers.all);
+    }
 
     var type = Object.prototype.toString.call(args);
 
@@ -793,13 +849,7 @@ module.exports = function(global, that) {
     }
 
     if (type === '[object Array]') {
-      var marker, x;
-      for (x in args) {
-        if (args.hasOwnProperty(x)) {
-          marker = args[x];
-          remove(findMarker(marker));
-        }
-      }
+      removeBulk(args);
     }
   }
 
