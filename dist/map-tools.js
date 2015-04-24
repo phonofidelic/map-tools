@@ -1,4 +1,4 @@
-/* map-tools.js 1.0.0 MIT License. 2015 Yago Ferrer <yago.ferrer@gmail.com> */
+/* map-tools.js 1.1.0 MIT License. 2015 Yago Ferrer <yago.ferrer@gmail.com> */
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 /* global: window */
 /*jslint node: true */
@@ -13,7 +13,7 @@ var utils = require('map-tools/utils');
 
 module.exports = function (global, that) {
 
-  var addFilter = require('map-tools/addFilter')(global, that);
+  var addFilter = require('map-tools/addFilter')(global, that, 'json');
 
   /**
    * Adds GeoJSON Feature Options like: style
@@ -29,8 +29,12 @@ module.exports = function (global, that) {
       if (features.hasOwnProperty(x)) {
         feature = features[x];
 
+        var uid =  utils.createUid();
+        feature.uid = uid;
         var data = feature.k;
-        feature.k.uid = utils.createUid();
+        feature.k.uid = uid;
+
+
 
         Object.defineProperty(feature, 'data', {
           value: data,
@@ -41,19 +45,20 @@ module.exports = function (global, that) {
 
         if (options) {
           if (options.filters) {
-            // Only add filters if not defined.
-            if (!global.mapTools.maps[that.id].json.filter) {
-              addFilter('json', options.filters);
+
+            // Add filters if not defined.
+            if (!that.json.filter) {
+              addFilter(options.filters);
             }
 
-            global.mapTools.maps[that.id].json.crossfilter.add([feature.data]);
+            that.json.crossfilter.add([feature]);
           }
 
           if (options.style) {
             that.instance.data.overrideStyle(feature, options.style);
           }
         }
-        global.mapTools.maps[that.id].json.all[feature.data.uid] = feature;
+        that.json.all[feature.data.uid] = feature;
       }
     }
   }
@@ -90,19 +95,19 @@ module.exports = function (global, that) {
   };
 };
 
-},{"map-tools/addFilter":3,"map-tools/utils":20,"topojson":23}],3:[function(require,module,exports){
+},{"map-tools/addFilter":3,"map-tools/utils":21,"topojson":24}],3:[function(require,module,exports){
 var crossfilter = require('crossfilter');
 
-module.exports = function(global, that) {
+var utils = require('map-tools/utils');
 
-  function defaultDimension(item) {
-    return function(d) {return d[item];};
-  }
+module.exports = function(global, that, type) {
 
-  function addFilter(type, filters) {
 
-    global.mapTools.maps[that.id][type].crossfilter = global.mapTools.maps[that.id][type].crossfilter || crossfilter([]);
-    global.mapTools.maps[that.id][type].filter = global.mapTools.maps[that.id][type].filter || {};
+  function addFilter(filters) {
+
+    that[type].crossfilter = that[type].crossfilter || crossfilter([]);
+    that[type].filter = that[type].filter || {};
+
     var dimension, item;
 
     if (typeof filters === 'string') {
@@ -113,9 +118,9 @@ module.exports = function(global, that) {
       if (filters.hasOwnProperty(dimension)) {
         item = filters[dimension];
         if (typeof item === 'string') {
-          global.mapTools.maps[that.id][type].filter[item] = global.mapTools.maps[that.id][type].crossfilter.dimension(defaultDimension(item));
+          that[type].filter[item] = that[type].crossfilter.dimension(utils.defaultDimension(item));
         } else {
-          global.mapTools.maps[that.id][type].filter[Object.keys(item)[0]] = global.mapTools.maps[that.id][type].crossfilter.dimension(item[Object.keys(item)[0]]);
+          that[type].filter[Object.keys(item)[0]] = that[type].crossfilter.dimension(item[Object.keys(item)[0]]);
         }
       }
     }
@@ -125,9 +130,11 @@ module.exports = function(global, that) {
 
 };
 
-},{"crossfilter":22}],4:[function(require,module,exports){
+},{"crossfilter":23,"map-tools/utils":21}],4:[function(require,module,exports){
 /*jslint node: true */
 "use strict";
+
+var config = require('map-tools/config');
 
 module.exports = function (global, that) {
 
@@ -162,13 +169,20 @@ module.exports = function (global, that) {
     that.id = args.id;
     that.options = args;
     that.instance = new global.google.maps.Map(getElement(args), mapOptions);
+    that.events = [];
 
     // Add Events
     if (args.on) {
       var i;
       for (i in args.on) {
         if (args.on.hasOwnProperty(i)) {
+
+          if (config.customEvents.indexOf(i) > - 1) {
+            that.events.push(i);
+          }
+
           global.google.maps.event.addListener(that.instance, i, args.on[i]);
+
         }
       }
     }
@@ -255,16 +269,18 @@ module.exports = function (global, that) {
 
 };
 
-},{"map-tools/gmaps.js":11}],5:[function(require,module,exports){
+},{"map-tools/config":8,"map-tools/gmaps.js":11}],5:[function(require,module,exports){
 /*jslint node: true */
 "use strict";
 var utils = require('map-tools/utils');
+var crossfilter = require('crossfilter');
 
 module.exports = function (global, that) {
   var infoWindow = require('map-tools/infoWindow')(global, that);
-  var addFilter = require('map-tools/addFilter')(global, that);
+  var addFilter = require('map-tools/addFilter')(global, that, 'markers');
 
   function addMarker(marker, options) {
+
     var i, j;
     marker.map = that.instance;
     marker.position = new global.google.maps.LatLng(marker.lat, marker.lng);
@@ -286,6 +302,10 @@ module.exports = function (global, that) {
       }
     }
 
+    marker.data = marker.data || {};
+
+    marker.data._self = marker;
+
     // Adds additional options from the Group and overwrites any Marker options already set.
     if (group && that.markers && that.markers.groupOptions && that.markers.groupOptions[group]) {
 
@@ -296,23 +316,33 @@ module.exports = function (global, that) {
       }
     }
 
-    marker.data = marker.data || {};
 
     if (that.uid && marker[that.uid]) {
       marker.data.uid = marker[that.uid];
+      marker.uid = marker.data.uid;
     }
 
-    if (!marker.data.uid) {
-      marker.data.uid = utils.createUid();
+    if (marker.uid && !marker.data.uid) {
+      marker.data.uid = marker.uid;
     }
+
+
+    if (!marker.uid) {
+      marker.data.uid = utils.createUid();
+      marker.uid = marker.data.uid;
+    }
+
 
     if (options && options.filters) {
       // Only add filters if not defined.
       if (!global.mapTools.maps[that.id].markers.filter) {
-        addFilter('markers', options.filters);
+        addFilter(options.filters);
       }
-      that.markers.crossfilter.add([marker.data]);
     }
+
+    that.markers.crossfilter = that.markers.crossfilter || crossfilter([]);
+    that.markers.filter = that.markers.filter || {};
+    that.markers.crossfilter.add([marker]);
 
     var instance = new global.google.maps.Marker(marker);
 
@@ -332,9 +362,13 @@ module.exports = function (global, that) {
       addToGroup(group, instance);
     }
 
+    if (marker.callback) {
+      marker.callback(marker);
+    }
+
     // Adds Marker Reference of each Marker to "markers.all"
     that.markers.all = global.mapTools.maps[that.id].markers.all || {};
-    that.markers.all[marker.data.uid] = instance;
+    that.markers.all[marker.uid] = instance;
 
     return instance;
   }
@@ -364,17 +398,20 @@ module.exports = function (global, that) {
    * @returns {Array} all the instances of the markers.
    */
   function addMarkers(args, options) {
-    if (args.length && args.length >= 1) {
-      var markers = [];
-      var marker;
-      for (var i in args) {
-        if (args.hasOwnProperty(i)) {
-          marker = addMarker(args[i], options);
-          markers.push(marker);
+    if (utils.isArray(args)) {
+      if (args.length >= 1) {
+        var marker, markers = [];
+        for (var i in args) {
+          if (args.hasOwnProperty(i)) {
+            marker = addMarker(args[i], options);
+            markers.push(marker);
+          }
         }
+
+        return markers;
       }
 
-      return markers;
+      return [];
     }
 
     return addMarker(args, options);
@@ -384,7 +421,7 @@ module.exports = function (global, that) {
 
 };
 
-},{"map-tools/addFilter":3,"map-tools/infoWindow":14,"map-tools/utils":20}],6:[function(require,module,exports){
+},{"crossfilter":23,"map-tools/addFilter":3,"map-tools/infoWindow":14,"map-tools/utils":21}],6:[function(require,module,exports){
 /*jslint node: true */
 "use strict";
 
@@ -492,7 +529,7 @@ module.exports = function(global, that) {
 	return addPanel;
 };
 
-},{"map-tools/config":8,"map-tools/template":16}],7:[function(require,module,exports){
+},{"map-tools/config":8,"map-tools/template":17}],7:[function(require,module,exports){
 /*jslint node: true */
 "use strict";
 module.exports = function (global, that) {
@@ -519,14 +556,18 @@ module.exports = {
   url: '//maps.googleapis.com/maps/api/js',
   zoom: 8,
   customMapOptions: ['id', 'lat', 'lng', 'type', 'uid'],
-  customMarkerOptions: ['lat', 'lng', 'move', 'infoWindow', 'on'],
+  customMarkerOptions: ['lat', 'lng', 'move', 'infoWindow', 'on', 'callback'],
   panelPosition: 'TOP_LEFT',
-  customInfoWindowOptions: ['open', 'close']
+  customInfoWindowOptions: ['open', 'close'],
+  customEvents: ['marker_visibility_changed']
 };
 
 },{}],9:[function(require,module,exports){
+var utils = require('map-tools/utils');
 
 module.exports = function(global, that, type) {
+
+  var addFilter = require('map-tools/addFilter')(global, that, type);
 
   var orderLookup = {
     ASC: 'top',
@@ -534,7 +575,14 @@ module.exports = function(global, that, type) {
   };
 
   function filter(args, options) {
-    var dimension, order, limit, query, result;
+
+    // Return All items if no arguments are supplied
+    if (typeof args === 'undefined' && typeof options === 'undefined') {
+      return utils.toArray(that[type].all);
+    };
+
+
+    var dimension, order, limit, query;
 
     if (typeof args === 'string') {
       dimension = args;
@@ -543,7 +591,10 @@ module.exports = function(global, that, type) {
       query = args[dimension];
     }
 
-    if (that[type].filter[dimension]) {
+    // Add Crossfilter Dimension if it does not exist.
+    if (!that[type].filter[dimension]) {
+      addFilter(dimension);
+    }
 
       order = (options && options.order && orderLookup[options.order]) ?
         orderLookup[options.order]
@@ -551,25 +602,34 @@ module.exports = function(global, that, type) {
 
       limit = (options && options.limit) ? options.limit : Infinity;
 
-      query = query || null;
 
-      result = that[type].filter[dimension].filter(query)[order](limit);
+      if (typeof query === 'undefined') {
+        query = null;
+      }
+
+      var finds = that[type].filter[dimension].filter(query)[order](limit);
+
+      //console.log(type, dimension, query, order, limit, finds);
+
+      var result = [], x;
+
+      for (x in finds) {
+          result.push(that[type].all[finds[x].uid]);
+      }
 
       if (limit === 1) {
         return result[0];
       }
 
-      return result;
-    }
 
-    return false;
+      return result;
 
   }
 
   return filter;
 }
 
-},{}],10:[function(require,module,exports){
+},{"map-tools/addFilter":3,"map-tools/utils":21}],10:[function(require,module,exports){
 "use strict";
 
 module.exports = function(global, that) {
@@ -631,7 +691,7 @@ module.exports = function (global) {
   };
 };
 
-},{"map-tools/config":8,"map-tools/utils":20}],12:[function(require,module,exports){
+},{"map-tools/config":8,"map-tools/utils":21}],12:[function(require,module,exports){
 /*jslint node: true */
 "use strict";
 var utils = require('map-tools/utils');
@@ -678,7 +738,7 @@ module.exports = function (global, that) {
 
 };
 
-},{"map-tools/config":8,"map-tools/updateMarker":19,"map-tools/utils":20}],13:[function(require,module,exports){
+},{"map-tools/config":8,"map-tools/updateMarker":20,"map-tools/utils":21}],13:[function(require,module,exports){
 /*jslint node: true */
 "use strict";
 module.exports = function (global) {
@@ -693,13 +753,14 @@ module.exports = function (global) {
 
     this.addMarker = require('map-tools/addMarker')(global, that);
     this.removeMarker = require('map-tools/removeMarker')(global, that);
+    this.resetMarker = require('map-tools/resetMarker')(global, that);
     this.addTopoJson = require('map-tools/addFeature')(global, that).addTopoJson;
     this.addGeoJson = require('map-tools/addFeature')(global, that).addGeoJson;
     this.updateFeature = require('map-tools/updateFeature')(global, that);
     this.addPanel = require('map-tools/addPanel')(global, that);
     this.updateMarker = require('map-tools/updateMarker')(global, that).update;
-    this.filterFeature = require('map-tools/filter')(global, that, 'json');
-    this.filterMarker = require('map-tools/filter')(global, that, 'markers');
+    this.findFeature = require('map-tools/filter')(global, that, 'json');
+    this.findMarker = require('map-tools/filter')(global, that, 'markers');
     this.addGroup = require('map-tools/groups')(global, that).addGroup;
     this.updateGroup = require('map-tools/groups')(global, that).updateGroup;
     this.updateMap = require('map-tools/updateMap')(global, that);
@@ -732,7 +793,7 @@ module.exports = function (global) {
   return mapTools;
 };
 
-},{"map-tools/addFeature":2,"map-tools/addMap":4,"map-tools/addMarker":5,"map-tools/addPanel":6,"map-tools/center":7,"map-tools/filter":9,"map-tools/groups":12,"map-tools/removeMarker":15,"map-tools/updateFeature":17,"map-tools/updateMap":18,"map-tools/updateMarker":19}],14:[function(require,module,exports){
+},{"map-tools/addFeature":2,"map-tools/addMap":4,"map-tools/addMarker":5,"map-tools/addPanel":6,"map-tools/center":7,"map-tools/filter":9,"map-tools/groups":12,"map-tools/removeMarker":15,"map-tools/resetMarker":16,"map-tools/updateFeature":18,"map-tools/updateMap":19,"map-tools/updateMarker":20}],14:[function(require,module,exports){
 /*jslint node: true */
 "use strict";
 
@@ -743,35 +804,40 @@ module.exports = function (global, that) {
 
   var timer = false;
 
-  function infoWindow(marker, options)
+  function infoWindow(map, marker, args)
   {
-    if (!marker.infoWindow.instance) {
-      if (options.content) {
-        options.content = options.content.replace(/\{(\w+)\}/g, function (m, variable) {
-          return marker.data[variable] || '';
-        });
+      var content = false;
 
-        marker.infoWindow.content = options.content;
+      if (marker.infoWindow.content) {
+
+        if (marker.infoWindow.content.indexOf('{') > - 1) {
+          content = args.content.replace(/\{(\w+)\}/g, function (m, variable) {
+            return marker.data[variable] || '';
+          });
+        }
+
+        content = content || marker.infoWindow.content;
       }
 
-       marker.infoWindow.instance = new global.google.maps.InfoWindow(options);
-    }
+      var options = utils.clone(args);
+      options.content = content;
 
-    that.infoWindow = marker.infoWindow.instance;
-  }
+      that.infoWindow = new global.google.maps.InfoWindow(options);
+      that.infoWindow.open(map, marker);
 
-  function open(marker, options, map) {
+  };
+
+  function open(map, marker, options) {
     close();
-    infoWindow(marker, options);
-    marker.infoWindow.instance.open(map, marker);
+    infoWindow(map, marker, options);
   }
+
   function isOpen(infoWindow){
     var map = infoWindow.getMap();
     return (map !== null && typeof map !== "undefined");
   }
 
   function close() {
-
     clearTimeout(timer);
     if (that.infoWindow && isOpen(that.infoWindow)) {
       that.infoWindow.close();
@@ -779,17 +845,15 @@ module.exports = function (global, that) {
   }
 
   function addEvents(marker, options, map) {
-
     var args = utils.prepareOptions(options, config.customInfoWindowOptions);
     var openOn = (args.custom && args.custom.open && args.custom.open.on) ?  args.custom.open.on : 'click';
     var closeOn = (args.custom && args.custom.close && args.custom.close.on) ? args.custom.close.on : 'click';
 
-
     // Toggle Effect when using the same method to Open and Close.
     if (openOn === closeOn) {
       global.google.maps.event.addListener(marker, openOn, function () {
-        if (!marker.infoWindow.instance || !isOpen(marker.infoWindow.instance)) {
-          open(marker, args.defaults, map);
+        if (!that.infoWindow || !isOpen(that.infoWindow)) {
+          open(map, marker, args.defaults);
         } else {
           close();
         }
@@ -798,15 +862,16 @@ module.exports = function (global, that) {
     } else {
 
       global.google.maps.event.addListener(marker, openOn, function () {
-        open(marker, args.defaults, map);
+        open(map, marker, args.defaults);
       });
-
 
       global.google.maps.event.addListener(marker, closeOn, function () {
         if (args.custom.close.duration) {
+
           timer = setTimeout(function(){
             close();
           }, args.custom.close.duration);
+
         } else {
           close();
         }
@@ -816,15 +881,15 @@ module.exports = function (global, that) {
 
   return {
     addEvents: addEvents
-  };
+  }
 };
 
 
-},{"map-tools/config":8,"map-tools/utils":20}],15:[function(require,module,exports){
+},{"map-tools/config":8,"map-tools/utils":21}],15:[function(require,module,exports){
 "use strict";
 module.exports = function(global, that) {
 
-  var findMarker = require('map-tools/findMarker')(global, that);
+  var findMarker = require('map-tools/findMarkerById')(global, that);
 
   function removeBulk(args) {
     var marker, x;
@@ -862,7 +927,74 @@ module.exports = function(global, that) {
 
 };
 
-},{"map-tools/findMarker":10}],16:[function(require,module,exports){
+},{"map-tools/findMarkerById":10}],16:[function(require,module,exports){
+"use strict";
+
+var utils = require('map-tools/utils');
+var config = require('map-tools/config');
+
+module.exports = function(global, that) {
+
+  var findMarker = require('map-tools/findMarkerById')(global, that);
+
+  var updateMarker = require('map-tools/updateMarker')(global, that);
+
+
+  function resetBulk(markers, options) {
+    var x;
+    for (x in markers) {
+      reset(markers[x], options);
+    }
+  }
+
+
+  function resetMarker(args, options) {
+
+    var type = Object.prototype.toString.call(args);
+
+    if (type === '[object Object]') {
+      return reset(findMarker(args), options);
+    }
+
+    if (type === '[object Array]') {
+      return resetBulk(args, options);
+    }
+
+  }
+
+  function formatOptions(marker, options) {
+    var key, op = {};
+    var type = Object.prototype.toString.call(options);
+
+    if (type === '[object String]') {
+      op[options] = marker.data._self[options];
+    }
+
+    if (type === '[object Array]') {
+      for (key in options) {
+        op[options[key]] = marker.data._self[options[key]];
+      }
+    }
+
+    return op;
+  }
+
+
+  function reset(marker, options) {
+
+    var preparedOptions = utils.prepareOptions(formatOptions(marker, options), config.customMarkerOptions);
+    updateMarker.customUpdate(marker, preparedOptions);
+
+    return marker;
+
+  }
+
+
+  return resetMarker;
+
+};
+
+},{"map-tools/config":8,"map-tools/findMarkerById":10,"map-tools/updateMarker":20,"map-tools/utils":21}],17:[function(require,module,exports){
 "use strict";
 module.exports = function(global, that) {
 
@@ -896,7 +1028,7 @@ module.exports = function(global, that) {
  return load;
 };
 
-},{}],17:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 /*jslint node: true */
 "use strict"
 
@@ -951,7 +1083,7 @@ module.exports = function(global, that) {
   return update;
 };
 
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 "use strict";
 module.exports = function (global, that) {
 
@@ -965,7 +1097,7 @@ module.exports = function (global, that) {
   return updateMap;
 };
 
-},{"map-tools/gmaps.js":11}],19:[function(require,module,exports){
+},{"map-tools/gmaps.js":11}],20:[function(require,module,exports){
 /*jslint node: true */
 "use strict";
 var utils = require('map-tools/utils');
@@ -973,14 +1105,27 @@ var config = require('map-tools/config');
 
 module.exports = function (global, that) {
 
-  var findMarker = require('map-tools/findMarker')(global, that);
+  var findMarker = require('map-tools/findMarkerById')(global, that);
+
+
 
   function update(args, options) {
+
+    var visibilityFlag = false;
+
     var type = Object.prototype.toString.call(args);
     var preparedOptions = utils.prepareOptions(options, config.customMarkerOptions);
 
+
+    if (preparedOptions.defaults && preparedOptions.defaults.hasOwnProperty('visible') && that.events.indexOf('marker_visibility_changed') > -1) {
+      visibilityFlag = true;
+    }
+
+
+    var result;
+
     if (type === '[object Object]') {
-      return customUpdate(findMarker(args), preparedOptions);
+      result = customUpdate(findMarker(args), preparedOptions);
     }
     if (type === '[object Array]') {
       var marker, results = [], instance, x;
@@ -991,8 +1136,30 @@ module.exports = function (global, that) {
           results.push(instance);
         }
       }
-      return results;
+      result = results;
     }
+
+
+    if (visibilityFlag) {
+      countVisible();
+    }
+
+    return result;
+
+  }
+
+  function countVisible() {
+
+    var x, count = 0;
+
+    for (x in that.markers.all) {
+      if (that.markers.all[x].visible) {
+        count++;
+      }
+    }
+
+    global.google.maps.event.trigger(that.instance, 'marker_visibility_changed', count);
+
   }
 
 
@@ -1008,7 +1175,9 @@ module.exports = function (global, that) {
       }
 
       if (options.custom.infoWindow && options.custom.infoWindow.content) {
-        marker.infoWindow.instance.setContent(options.custom.infoWindow.content);
+
+        marker.infoWindow.content = options.custom.infoWindow.content;
+
       }
     }
 
@@ -1026,7 +1195,7 @@ module.exports = function (global, that) {
 
 };
 
-},{"map-tools/config":8,"map-tools/findMarker":10,"map-tools/utils":20}],20:[function(require,module,exports){
+},{"map-tools/config":8,"map-tools/findMarkerById":10,"map-tools/utils":21}],21:[function(require,module,exports){
 /*jslint node: true */
 "use strict";
 function clone(o, exceptionKeys) {
@@ -1042,6 +1211,7 @@ function clone(o, exceptionKeys) {
   }
   return out;
 }
+
 
 function createUid() {
   return 'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
@@ -1068,13 +1238,43 @@ function prepareOptions(options, custom) {
   return result;
 }
 
+function isArray(arg) {
+  if (!Array.isArray) {
+    return Object.prototype.toString.call(arg) === '[object Array]';
+  }
+
+  return Array.isArray(arg);
+}
+
+function toArray(obj) {
+  return Object.keys(obj).map(function(key){ return obj[key] });
+}
+
+function defaultDimension(item) {
+  return function(d) {
+
+    if (typeof(d.data[item]) === "undefined" && typeof(d[item]) !== "undefined") {
+      return d[item];
+    }
+
+    if (typeof(d.data[item]) === "undefined" && typeof(d[item]) === "undefined") {
+      return null;
+    }
+
+    return d.data[item];
+  };
+}
+
 module.exports = {
   clone: clone,
   createUid: createUid,
-  prepareOptions: prepareOptions
+  prepareOptions: prepareOptions,
+  isArray: isArray,
+  toArray: toArray,
+  defaultDimension: defaultDimension
 };
 
-},{}],21:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 (function(exports){
 crossfilter.version = "1.3.11";
 function crossfilter_identity(d) {
@@ -2477,10 +2677,10 @@ function crossfilter_capacity(w) {
 }
 })(typeof exports !== 'undefined' && exports || this);
 
-},{}],22:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 module.exports = require("./crossfilter").crossfilter;
 
-},{"./crossfilter":21}],23:[function(require,module,exports){
+},{"./crossfilter":22}],24:[function(require,module,exports){
 !function() {
   var topojson = {
     version: "1.6.18",
