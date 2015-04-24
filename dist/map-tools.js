@@ -1,4 +1,4 @@
-/* map-tools.js 1.1.0 MIT License. 2015 Yago Ferrer <yago.ferrer@gmail.com> */
+/* map-tools.js 1.1.2 MIT License. 2015 Yago Ferrer <yago.ferrer@gmail.com> */
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 /* global: window */
 /*jslint node: true */
@@ -574,6 +574,21 @@ module.exports = function(global, that, type) {
     DESC: 'bottom'
   };
 
+  // cf has it's own state, for each dimension
+  // before each new filtering we need to clear this state
+  function clearAll(dimensionSet){
+    var i, dimension;
+    for (i in dimensionSet){
+
+      if (dimensionSet.hasOwnProperty(i)) {
+        dimension = dimensionSet[i];
+
+        dimension.filterAll();
+      }
+    }
+  }
+
+
   function filter(args, options) {
 
     // Return All items if no arguments are supplied
@@ -581,6 +596,7 @@ module.exports = function(global, that, type) {
       return utils.toArray(that[type].all);
     };
 
+    clearAll(that[type].filter);
 
     var dimension, order, limit, query;
 
@@ -607,7 +623,7 @@ module.exports = function(global, that, type) {
         query = null;
       }
 
-      var finds = that[type].filter[dimension].filter(query)[order](limit);
+      var finds = that[type].filter[dimension].filterAll().filter(query)[order](limit);
 
       //console.log(type, dimension, query, order, limit, finds);
 
