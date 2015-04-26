@@ -16,6 +16,9 @@ module.exports = {
 			addDomListener: function(instance, event, cb)
       {
         cb()
+      },
+      trigger: function(instance, event, value) {
+
       }
     },
     LatLng: function(lat, lng) {
@@ -37,7 +40,6 @@ module.exports = {
       return {};
     },
     InfoWindow: function(options) {
-
       return {
         open: function(){},
         close: function(){},
@@ -48,7 +50,6 @@ module.exports = {
       };
     },
     Marker: function(marker) {
-
       marker.setAnimation = function() {
         return 'animation set';
       };
@@ -73,6 +74,7 @@ module.exports = {
       return {};
     },
     Map: function() {
+
       return {
         zoom: 8,
         gm_bindings_: {},
@@ -86,6 +88,22 @@ module.exports = {
       	},
 				setOptions: function(options) {
           this.options = options;
+        },
+        getCenter: function() {
+
+          var that = this;
+
+          return {
+            lat: function() {
+
+              return 41;
+
+            },
+            lng: function() {
+
+              return 1;
+            }
+          }
         },
 				controls:{
 					'1': [], //TOP_LEFT

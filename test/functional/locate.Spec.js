@@ -1,5 +1,4 @@
-describe('when calling updateMap()', function () {
-  "use strict";
+describe('Given the Locate() Method', function(){
 
   var map;
   beforeEach(function () {
@@ -9,8 +8,9 @@ describe('when calling updateMap()', function () {
     map = new mapTools({async: false, id: 'mymap', lat: 41.3833, lng: 2.1833});
   });
 
-  it('should update any options set', function () {
-    map.updateMap({type: 'TERRAIN'});
-    expect(map.instance.options.mapTypeId).to.eql('TERRAIN');
+  it('Should return an object with the current location', function() {
+    var result = map.locate();
+    expect(result.lat).to.eql(41);
+    expect(result.lng).to.eql(1);
   });
 });

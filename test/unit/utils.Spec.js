@@ -1,5 +1,13 @@
 
 describe('Given the Utils Class', function () {
+
+  var utils;
+
+  beforeEach(function () {
+    utils = require('map-tools/utils');
+  });
+
+
   describe('when calling clone()', function () {
     it('should clone an object', function() {
       var obj = {
@@ -22,7 +30,7 @@ describe('Given the Utils Class', function () {
           property3: 'value3'
         };
 
-        var utils = require('map-tools/utils');
+
         var output = utils.clone(obj, ['property2', 'property3']);
         expect(output).to.eql({property1: 'value1'});
       });
@@ -41,8 +49,10 @@ describe('Given the Utils Class', function () {
     });
 
     it('should return True when the input is an Array', function() {
-      var result = utils.isArray([]);
-      expect(result).to.eql(true);
+
+      var result1 = utils.isArray([]);
+      expect(result1).to.eql(true);
+
     });
 
 
@@ -50,7 +60,39 @@ describe('Given the Utils Class', function () {
       var utils = require('map-tools/utils');
       var result = utils.isArray('string');
       expect(result).to.eql(false);
+      //Array.isArray = false;
+      //var result = utils.isArray('string');
+      //expect(result).to.eql(false);
     });
+
+  });
+
+
+  describe('when calling defaultDimension()', function () {
+    describe('if the property exists in the root level', function () {
+      it('should return the value of the property', function () {
+        var result = utils.defaultDimension('visible')({data:{}, visible: true});
+        expect(result).to.eql(true);
+      });
+
+    });
+    describe('if the property exists under "data"', function () {
+      it('should return the value of the data.property', function () {
+        var result = utils.defaultDimension('visible')({data:{visible: true}});
+        expect(result).to.eql(true);
+      });
+    });
+
+    describe('if the property does not exist anywhere', function () {
+
+      it('should return null', function () {
+        var result = utils.defaultDimension('visible')({data:{}});
+        expect(result).to.eql(null);
+      });
+
+    });
+
+
 
 
   });
