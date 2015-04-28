@@ -1,4 +1,4 @@
-/* map-tools.js 1.2.0 MIT License. 2015 Yago Ferrer <yago.ferrer@gmail.com> */
+/* map-tools.js 1.2.1 MIT License. 2015 Yago Ferrer <yago.ferrer@gmail.com> */
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 /* global: window */
 /*jslint node: true */
@@ -250,8 +250,8 @@ module.exports = function (global, that) {
       };
 
       // Set Global Structure
-      global.mapTools.maps[id].markers = global.mapTools.maps[id].markers || {all: {}, tags: {}};
-      global.mapTools.maps[id].json = global.mapTools.maps[id].json || {all: {}};
+      global.mapTools.maps[id].markers = global.mapTools.maps[id].markers || {all: {}, tags: {}, dataChanged: false};
+      global.mapTools.maps[id].json = global.mapTools.maps[id].json || {all: {}, dataChanged: false};
 
       that.markers = global.mapTools.maps[id].markers;
       that.json = global.mapTools.maps[id].json;
@@ -423,12 +423,14 @@ module.exports = function (global, that) {
           }
         }
 
+        that.markers.dataChanged = true;
         return markers;
       }
 
       return [];
     }
 
+    that.markers.dataChanged = true;
     return addMarker(args, options);
   }
 
@@ -601,7 +603,13 @@ module.exports = function(global, that, type) {
       if (dimensionSet.hasOwnProperty(i)) {
         dimension = dimensionSet[i];
 
-        dimension.filterAll();
+        if (that[type].dataChanged === true) {
+          dimension.dispose();
+          addFilter(i);
+        } else {
+          dimension.filterAll();
+        }
+
       }
     }
   }
@@ -635,8 +643,9 @@ module.exports = function(global, that, type) {
       if (dimension === 'tags') {
         return filterByTag(query);
       }
-
     }
+
+    clearAll(that[type].filter);
 
     // Add Crossfilter Dimension if it does not exist.
     if (!that[type].filter[dimension]) {
@@ -654,16 +663,13 @@ module.exports = function(global, that, type) {
         query = null;
       }
 
-      clearAll(that[type].filter);
-
       var result = that[type].filter[dimension].filter(query)[order](limit);
 
-
+      that[type].dataChanged = false;
 
       if (limit === 1) {
         return result[0];
       }
-
 
       return result;
 
@@ -944,13 +950,19 @@ module.exports = function(global, that) {
   function resetMarker(args, options) {
     var type = Object.prototype.toString.call(args);
 
+    var result;
+
     if (type === '[object Object]') {
-      return reset(findMarker(args), options);
+      result = reset(findMarker(args), options);
     }
 
     if (type === '[object Array]') {
-      return resetBulk(args, options);
+      result = resetBulk(args, options);
     }
+
+    that.markers.dataChanged = true;
+
+    return result;
   }
 
   function formatOptions(marker, options) {
@@ -1127,6 +1139,8 @@ module.exports = function (global, that) {
     if (visibilityFlag) {
       countVisible();
     }
+
+    that.markers.dataChanged = true;
 
     return result;
   }
